@@ -112,51 +112,122 @@ const handleDefaultFlow = async (token) => {
       const tasksData = await getTasks(token);
 
       tasksData.forEach(async (category) => {
-        for (const task of category.tasks) {
-          if (task.status === "FINISHED") {
-            console.log(`⏭️  Task "${task.title}" is already completed.`.cyan);
-          } else if (task.status === "NOT_STARTED") {
-            console.log(
-              `⏳ Task "${task.title}" is not started yet. Starting now...`.red
-            );
-
-            const startedTask = await startTask(token, task.id, task.title);
-
-            if (startedTask) {
+        if (
+          category.tasks &&
+          category.tasks.length > 0 &&
+          category.tasks[0].subTasks
+        ) {
+          for (const task of category.tasks[0].subTasks) {
+            if (task.status === "FINISHED") {
               console.log(
-                `✅ Task "${startedTask.title}" has been started!`.green
+                `⏭️  Task "${task.title}" is already completed.`.cyan
+              );
+            } else if (task.status === "NOT_STARTED") {
+              console.log(
+                `⏳ Task "${task.title}" is not started yet. Starting now...`
+                  .red
               );
 
-              console.log(
-                `⏳ Claiming reward for "${task.title}" is starting now...`.red
-              );
+              const startedTask = await startTask(token, task.id, task.title);
 
+              if (startedTask) {
+                console.log(
+                  `✅ Task "${startedTask.title}" has been started!`.green
+                );
+
+                console.log(
+                  `⏳ Claiming reward for "${task.title}" is starting now...`
+                    .red
+                );
+
+                try {
+                  const claimedTask = await claimTaskReward(token, task.id);
+                  console.log(
+                    `✅ Task "${claimedTask.title}" has been claimed!`.green
+                  );
+                  console.log(`🎁 Reward: ${claimedTask.reward}`.green);
+                } catch (error) {
+                  console.log(
+                    `🚫 Unable to claim task "${task.title}", please try to claim it manually.`
+                      .red
+                  );
+                }
+              }
+            } else if (
+              task.status === "STARTED" ||
+              task.status === "READY_FOR_CLAIM"
+            ) {
               try {
                 const claimedTask = await claimTaskReward(token, task.id);
+
                 console.log(
                   `✅ Task "${claimedTask.title}" has been claimed!`.green
                 );
                 console.log(`🎁 Reward: ${claimedTask.reward}`.green);
               } catch (error) {
-                console.log(
-                  `🚫 Unable to claim task "${task.title}", please try to claim it manually.`
-                    .red
-                );
+                console.log(`🚫 Unable to claim task "${task.title}".`.red);
               }
             }
-          } else if (
-            task.status === "STARTED" ||
-            task.status === "READY_FOR_CLAIM"
-          ) {
-            try {
-              const claimedTask = await claimTaskReward(token, task.id);
+          }
+        }
 
-              console.log(
-                `✅ Task "${claimedTask.title}" has been claimed!`.green
-              );
-              console.log(`🎁 Reward: ${claimedTask.reward}`.green);
-            } catch (error) {
-              console.log(`🚫 Unable to claim task "${task.title}".`.red);
+        if (
+          category.subSections &&
+          category.subSections.length > 0 &&
+          category.subSections[0].tasks
+        ) {
+          for (const fetchedTasks of category.subSections) {
+            for (const task of fetchedTasks.tasks) {
+              if (task.status === "FINISHED") {
+                console.log(
+                  `⏭️  Task "${task.title}" is already completed.`.cyan
+                );
+              } else if (task.status === "NOT_STARTED") {
+                console.log(
+                  `⏳ Task "${task.title}" is not started yet. Starting now...`
+                    .red
+                );
+
+                const startedTask = await startTask(token, task.id, task.title);
+
+                if (startedTask) {
+                  console.log(
+                    `✅ Task "${startedTask.title}" has been started!`.green
+                  );
+
+                  console.log(
+                    `⏳ Claiming reward for "${task.title}" is starting now...`
+                      .red
+                  );
+
+                  try {
+                    const claimedTask = await claimTaskReward(token, task.id);
+                    console.log(
+                      `✅ Task "${claimedTask.title}" has been claimed!`.green
+                    );
+                    console.log(`🎁 Reward: ${claimedTask.reward}`.green);
+                  } catch (error) {
+                    console.log(
+                      `🚫 Unable to claim task "${task.title}", please try to claim it manually.`
+                        .red
+                    );
+                  }
+                }
+              } else if (
+                task.status === "STARTED" ||
+                task.status === "READY_FOR_CLAIM"
+              ) {
+                try {
+                  const claimedTask = await claimTaskReward(token, task.id);
+
+                  console.log(
+                    `✅ Task "${claimedTask.title}" has been claimed!`.green
+                  );
+                  console.log(`🎁 Reward: ${claimedTask.reward}`.green);
+                } catch (error) {
+                  console.log(`🚫 Unable to claim task "${task.title}".`.red);
+                }
+              }
             }
           }
         }
@@ -322,7 +393,7 @@ const handleOneTimeFlow = async (token) => {
       `🚜 Starting farming session... - [${new Date().toLocaleString()}]`
     );
     const farmingSession = await startFarmingSession(token);
-    console.log("Status startFarm" + farmingSession)
+    console.log("Status startFarm" + farmingSession);
     const farmStartTime = moment(farmingSession.startTime).format(
       "MMMM Do YYYY, h:mm:ss A"
     );
